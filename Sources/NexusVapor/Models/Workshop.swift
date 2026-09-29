@@ -36,8 +36,8 @@ final class Workshop: Model, Content , @unchecked Sendable {
     @Parent(key: "category_id")
     var category : Category
     
-    //@Children(for: \.$workshop)
-   // var reservations : [Reservation]
+    @Children(for: \.$workshop)
+    var reservations : [Reservation]
     
     init() {}
     
