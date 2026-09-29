@@ -1,0 +1,27 @@
+//
+//  CreateCategory.swift
+//  NexusVapor
+//
+//  Created by Apprenant 109 on 29/09/2026.
+//
+
+import Fluent
+struct CreateCategory: AsyncMigration {
+    func prepare (on database: any Database) async throws {
+        try await database
+            .schema(Workshop.schema)
+            .id()
+            .field(
+                "name",
+                .string,
+                .required
+            )
+            .create()
+    }
+    func revert(on database: any Database) async throws {
+        try await database
+            .schema(Category.schema)
+            .delete()
+    }
+    
+}
