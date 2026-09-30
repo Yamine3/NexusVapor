@@ -30,14 +30,9 @@ final class User: Model, Content, @unchecked Sendable {
     @Field(key: "creation_date")
     var creationDate: Date
     
-    @Siblings(
-        through: Reservation.self,
-        from: \.$user,
-        to: \.$workshop
-    )
-    
-    var workshops: [Workshop]
-    
+    @Children(for: \.$user)
+    var reservations : [Reservation]
+        
     init()  {}
     
     init(
