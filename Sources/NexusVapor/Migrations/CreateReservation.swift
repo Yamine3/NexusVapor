@@ -18,11 +18,18 @@ struct CreateReservation: AsyncMigration {
                 .required
             )
             .field(
-                "worshop_id",
+                "workshop_id",
                 .uuid,
                 .required,
                 .references(Reservation.schema, "id")
             )
+            .field(
+                "user_id",
+                .uuid,
+                .required,
+                .references(User.schema, "id")
+            )
+            .unique(on: "workshop_id", "user_id")
             .create()
     }
     func revert(on database: any Database) async throws {
