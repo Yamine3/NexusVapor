@@ -13,18 +13,18 @@ final class Reservation: Model,Content, @unchecked Sendable {
     
     @ID(key: .id)
     var id: UUID?
-
+    
     @Enum(key: "status")
     var status: ReservationStatus
-
+    
     @Parent(key: "workshop_id")
     var workshop : Workshop
-
+    
     @Parent(key: "user_id")
     var user: User
-
+    
     init() { }
-
+    
     init(
         id: UUID? = nil,
         status: ReservationStatus,
@@ -44,4 +44,13 @@ enum ReservationStatus: String, Codable {
     case validated
     case pending
     case cancelled
+}
+
+extension Reservation {
+    func toDTO() throws -> ReservationResponseDTO {
+        return ReservationResponseDTO(
+            id: try requireID(),
+            status: status
+        )
+    }
 }
