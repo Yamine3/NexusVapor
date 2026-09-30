@@ -9,7 +9,7 @@ import Fluent
 struct CreateCategory: AsyncMigration {
     func prepare (on database: any Database) async throws {
         try await database
-            .schema(Workshop.schema)
+            .schema(Category.schema)
             .id()
             .field(
                 "name",
