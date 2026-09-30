@@ -36,12 +36,8 @@ final class Workshop: Model, Content , @unchecked Sendable {
     @Parent(key: "category_id")
     var category : Category
     
-    @Siblings(
-        through: Reservation.self,
-        from: \.$workshop,
-        to: \.$user
-    )
-    var users : [User]
+    @Children(for: \.$workshop)
+    var reservations : [Reservation]
     
     init() {}
     
@@ -66,6 +62,34 @@ final class Workshop: Model, Content , @unchecked Sendable {
         self.$category.id = categoryID
         
     }
-
 }
 
+
+extension Workshop {
+    func WorkshoptoDTO () throws -> GetWorkshopsListDTO {
+        return GetWorkshopsListDTO (
+            id: try requireID(),
+            name : name,
+            startTime: startTime,
+            endTime: endTime,
+            capacityMax: capacityMax,
+            totalSubscribers: totalSubscribers,
+            category: category.name
+        )
+    }
+}
+
+extension Workshop {
+    func WorkshopDetailtoDTO () throws -> GetWorkshopsDetailDTO {
+        return GetWorkshopsDetailDTO (
+            id: try requireID(),
+            name : name,
+            startTime: startTime,
+            endTime: endTime,
+            capacityMax: capacityMax,
+            totalSubscribers: totalSubscribers,
+            description: description,
+            category: category.name
+        )
+    }
+}
