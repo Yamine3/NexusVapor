@@ -13,8 +13,8 @@ final class Category: Model,Content, @unchecked Sendable {
     @ID(key: .id)
     var id: UUID?
 
-    @Field(key: "title")
-    var title: String
+    @Field(key: "name")
+    var name: String
 
     @Children(for: \.$category)
     var workshops : [Workshop]
@@ -23,9 +23,9 @@ final class Category: Model,Content, @unchecked Sendable {
 
     init(
         id: UUID? = nil,
-        title: String
+        name: String
     ) {
         self.id = id
-        self.title = title
+        self.name = name
     }
 }

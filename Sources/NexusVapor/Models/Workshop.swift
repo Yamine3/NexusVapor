@@ -19,16 +19,16 @@ final class Workshop: Model, Content , @unchecked Sendable {
     var name : String
     
     @Field(key: "start_time")
-    var start_time : Date
+    var startTime : Date
     
     @Field(key: "end_time")
-    var end_time : Date
+    var endTime : Date
     
     @Field(key: "capacity_max")
-    var capacity_max : Int
+    var capacityMax : Int
     
     @Field(key: "total_subscribers")
-    var total_subscribers : Int
+    var totalSubscribers : Int
     
     @Field(key: "description")
     var description: String
@@ -36,37 +36,36 @@ final class Workshop: Model, Content , @unchecked Sendable {
     @Parent(key: "category_id")
     var category : Category
     
-    @Children(for: \.$workshop)
-    var reservations : [Reservation]
+    @Siblings(
+        through: Reservation.self,
+        from: \.$workshop,
+        to: \.$user
+    )
+    var users : [User]
     
     init() {}
     
-    
     init(
-        id:UUID? = nil,
+        id: UUID? = nil,
         name: String,
-        category_id: UUID,
-        start_time: Date,
-        end_time: Date,
-        capacity_max: Int,
-        total_subscribers: Int,
-        description: String
-
+        startTime: Date,
+        endTime: Date,
+        capacityMax: Int,
+        totalSubscribers: Int,
+        description: String,
+        categoryID: UUID,
+        
     ) {
         self.id = id
         self.name = name
-        self.$category.id = category_id
-        self.start_time = start_time
-        self.end_time = end_time
-        self.capacity_max = capacity_max
-        self.total_subscribers = total_subscribers
-        self.total_subscribers = total_subscribers
+        self.startTime = startTime
+        self.endTime = endTime
+        self.capacityMax = capacityMax
+        self.totalSubscribers = totalSubscribers
         self.description = description
-
+        self.$category.id = categoryID
         
     }
-    
-    
-    
+
 }
 
