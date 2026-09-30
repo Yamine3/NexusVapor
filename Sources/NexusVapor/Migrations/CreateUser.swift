@@ -37,7 +37,8 @@ struct CreateUser: AsyncMigration {
                 .string,
                 .required
             )
-        
+            .unique(on: "email")
+            .create()
     }
     func revert(on database: any Database) async throws {
         try await database
