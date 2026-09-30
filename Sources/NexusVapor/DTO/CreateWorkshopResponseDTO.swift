@@ -17,7 +17,7 @@ struct CreateWorkshopResponseDTO: Content {
     var description : String
     var categoryID: UUID
     
-    func toModel() -> Workshop {
+    func ReservationtoModel() -> Workshop {
         let workshop = Workshop(
             name : name,
             startTime: startTime,

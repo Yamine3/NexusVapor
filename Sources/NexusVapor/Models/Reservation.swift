@@ -47,7 +47,7 @@ enum ReservationStatus: String, Codable {
 }
 
 extension Reservation {
-    func toDTO() throws -> ReservationResponseDTO {
+    func ReservationtoDTO() throws -> ReservationResponseDTO {
         return ReservationResponseDTO(
             id: try requireID(),
             status: status
