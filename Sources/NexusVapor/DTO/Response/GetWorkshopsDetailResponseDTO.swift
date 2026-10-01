@@ -8,13 +8,13 @@
 import Vapor
 import Fluent
 
-struct GetWorkshopsDetailDTO: Content {
+struct GetWorkshopsDetailResponseDTO: Content {
     var id: UUID
     var name : String
     var startTime: Date
     var endTime: Date
     var capacityMax: Int
-    var totalSubscribers: Int
+    var remainingPlaces: Int
     var description : String
     var category: String
 }

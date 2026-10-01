@@ -34,7 +34,7 @@ struct CreateUser: AsyncMigration {
             )
             .field(
                 "creation_date",
-                .string,
+                .datetime,
                 .required
             )
             .unique(on: "email")

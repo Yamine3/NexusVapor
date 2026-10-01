@@ -66,28 +66,28 @@ final class Workshop: Model, Content , @unchecked Sendable {
 
 
 extension Workshop {
-    func WorkshoptoDTO () throws -> GetWorkshopsListDTO {
-        return GetWorkshopsListDTO (
+    func convertToWorkshopListDTO () throws -> GetWorkshopsListResponseDTO {
+        return GetWorkshopsListResponseDTO (
             id: try requireID(),
             name : name,
             startTime: startTime,
             endTime: endTime,
             capacityMax: capacityMax,
-            totalSubscribers: totalSubscribers,
+            remainingPlaces: capacityMax - totalSubscribers,
             category: category.name
         )
     }
 }
 
 extension Workshop {
-    func WorkshopDetailtoDTO () throws -> GetWorkshopsDetailDTO {
-        return GetWorkshopsDetailDTO (
+    func convertToWorkshopDetailtoDTO () throws -> GetWorkshopsDetailResponseDTO {
+        return GetWorkshopsDetailResponseDTO (
             id: try requireID(),
             name : name,
             startTime: startTime,
             endTime: endTime,
             capacityMax: capacityMax,
-            totalSubscribers: totalSubscribers,
+            remainingPlaces: capacityMax - totalSubscribers,
             description: description,
             category: category.name
         )
