@@ -8,22 +8,23 @@
 import Vapor
 import Fluent
 
-struct CreateWorkshopResponseDTO: Content {
+struct CreateWorkshopDTO: Content {
     var name : String
     var startTime: Date
     var endTime: Date
     var capacityMax: Int
-    var totalSubscribers: Int
+//    var totalSubscribers: Int
+    //parce que c'est pas au frontend d'envoyer "totalSubscribers", mais au backend de lui indiquer
     var description : String
     var categoryID: UUID
     
-    func ReservationtoModel() -> Workshop {
+    func convertToWorshop() -> Workshop {
         let workshop = Workshop(
             name : name,
             startTime: startTime,
             endTime: endTime,
             capacityMax: capacityMax,
-            totalSubscribers: totalSubscribers,
+            totalSubscribers: 0,
             description: description,
             categoryID: categoryID
         )

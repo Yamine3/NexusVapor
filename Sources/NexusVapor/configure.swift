@@ -19,7 +19,9 @@ func configure(_ app: Application) async throws {
 
     // app.migrations.add()
     app.migrations.add(CreateCategory())
+    app.migrations.add(CreateUser())
     app.migrations.add(CreateWorkshop())
+    app.migrations.add(CreateReservation())
 
     app.views.use(.leaf)
 

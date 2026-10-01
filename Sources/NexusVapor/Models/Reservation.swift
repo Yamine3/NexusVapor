@@ -47,22 +47,22 @@ enum ReservationStatus: String, Codable {
 }
 
 extension Reservation {
-    func toResponseDTO() throws -> GetReservationListItemResponseDTO {
+    func convertToReservationListDTO() throws -> GetReservationListItemResponseDTO {
         GetReservationListItemResponseDTO(
             id: try requireID(),
-            workshopID: workshop.id!,
+            workshopID: try workshop.requireID(),
             workshopName: workshop.name,
             category: workshop.category.name,
             startTime: workshop.startTime,
             endTime: workshop.endTime,
-            maxCapacity: workshop.capacityMax,
+            capacityMax: workshop.capacityMax,
             status: status
         )
     }
 }
 
 extension Reservation {
-    func toAttendeeDTO() throws -> WorkshopAttendeeResponseDTO {
+    func convertToWorkshopAttendeeDTO() throws -> WorkshopAttendeeResponseDTO {
         WorkshopAttendeeResponseDTO(
             reservationID: try requireID(),
             userID: try user.requireID(),

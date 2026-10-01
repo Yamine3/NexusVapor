@@ -15,7 +15,7 @@ struct GetReservationListItemResponseDTO: Content {
     let category: String
     let startTime: Date
     let endTime: Date
-    let maxCapacity: Int
+    let capacityMax: Int
     let status: ReservationStatus
 }
 
