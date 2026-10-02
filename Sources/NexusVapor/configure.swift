@@ -16,15 +16,26 @@ func configure(_ app: Application) async throws {
         password: Environment.get("DATABASE_PASSWORD") ?? "",
         database: Environment.get("DATABASE_NAME") ?? "nexus_db"
     ), as: .mysql)
+    
+    let corsConfiguration = CORSMiddleware.Configuration(
+        allowedOrigin: .all, allowedMethods: [.GET,.POST,.PUT,.DELETE,.OPTIONS],
+        allowedHeaders: [.accept, .authorization, .contentType, .origin],
+        cacheExpiration: 800
+    )
+    
+    let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
 
     // app.migrations.add()
     app.migrations.add(CreateCategory())
     app.migrations.add(CreateUser())
     app.migrations.add(CreateWorkshop())
     app.migrations.add(CreateReservation())
+    app.middleware.use(corsMiddleware)
 
     app.views.use(.leaf)
 
     // register routes
     try routes(app)
+    
+   
 }
