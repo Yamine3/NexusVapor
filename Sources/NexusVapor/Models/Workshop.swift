@@ -80,7 +80,7 @@ extension Workshop {
 }
 
 extension Workshop {
-    func convertToWorkshopDetailtoDTO () throws -> GetWorkshopsDetailResponseDTO {
+    func convertToWorkshopDetailDTO (category: Category) throws -> GetWorkshopsDetailResponseDTO {
         return GetWorkshopsDetailResponseDTO (
             id: try requireID(),
             name : name,
