@@ -8,7 +8,7 @@
 import Fluent
 import Vapor
 
-final class User: Model, Content, @unchecked Sendable {
+final class UserModel: Model, Content, @unchecked Sendable {
     
     static let schema = "users"
     
@@ -40,21 +40,27 @@ final class User: Model, Content, @unchecked Sendable {
         name: String,
         password: String,
         email: String,
-        role: Role,
-        creationDate: Date
+        role: Role?,
+        creationDate: Date?
         
     ) {
         self.id = id
         self.name = name
         self.password = password
         self.email = email
-        self.role = role
-        self.creationDate = creationDate
-        
+        self.role = role ?? Role.festivalGoer
+        self.creationDate = creationDate ?? Date()
     }
 }
 
 enum Role: String, Codable {
     case staff
     case festivalGoer
+}
+
+
+extension UserModel {
+    func toDTO() -> UserDTO {
+        return UserDTO(id: id, name: name, email: email)
+    }
 }

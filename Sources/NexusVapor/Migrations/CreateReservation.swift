@@ -27,7 +27,7 @@ struct CreateReservation: AsyncMigration {
                 "user_id",
                 .uuid,
                 .required,
-                .references(User.schema, "id")
+                .references(UserModel.schema, "id")
             )
             .unique(on: "workshop_id", "user_id")
             .create()

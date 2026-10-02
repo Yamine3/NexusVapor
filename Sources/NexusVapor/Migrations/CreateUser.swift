@@ -10,7 +10,7 @@ import Fluent
 struct CreateUser: AsyncMigration {
     func prepare(on database: any Database) async throws {
         try await database
-            .schema(User.schema)
+            .schema(UserModel.schema)
             .id()
             .field(
                 "name",
@@ -42,7 +42,7 @@ struct CreateUser: AsyncMigration {
     }
     func revert(on database: any Database) async throws {
         try await database
-            .schema(User.schema)
+            .schema(UserModel.schema)
             .delete()
     }
 }
