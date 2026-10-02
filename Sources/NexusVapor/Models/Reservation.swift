@@ -21,7 +21,7 @@ final class Reservation: Model,Content, @unchecked Sendable {
     var workshop : Workshop
     
     @Parent(key: "user_id")
-    var user: User
+    var user: UserModel
     
     init() { }
     
