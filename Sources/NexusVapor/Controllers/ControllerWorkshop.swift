@@ -20,11 +20,9 @@ struct ControllerWorkshop: RouteCollection {
             workshop.delete(use: delete)
             workshop.get(use: show)
         }
-        
     }
     
-    
-//INDEX
+    //INDEX
     //    func index(req : Request) async throws -> [Workshop] {
     //        return try await Workshop
     //            .query(on: req.db)
@@ -41,13 +39,13 @@ struct ControllerWorkshop: RouteCollection {
             try $0.convertToWorkshopListDTO()
         }
     }
-
-//SHOW
+    
+    //SHOW
     func show(req: Request) async throws -> GetWorkshopsDetailResponseDTO {
         guard let id = req.parameters.get(
             "id", as: UUID.self
         ) else {
-            throw Abort (.badRequest, reason: "Invalid ID.")
+            throw Abort (.badRequest, reason: "Invalid workshop ID.")
         }
         
         guard let workshop = try await Workshop
@@ -58,10 +56,13 @@ struct ControllerWorkshop: RouteCollection {
                 else {
             throw Abort(.notFound, reason: "Workshop not found.")
         }
-        return try workshop.convertToWorkshopDetailtoDTO()
+        
+        let category = workshop.category
+        
+        return try workshop.convertToWorkshopDetailDTO(category: category)
     }
-
-//CREATE
+    
+    //CREATE
     //    func create(req: Request) async throws -> Workshop {
     //        let workshop = try req.content.decode(
     //            Workshop.self
@@ -70,49 +71,128 @@ struct ControllerWorkshop: RouteCollection {
     //        return workshop
     //    }
     
-    func create(req: Request) async throws -> Workshop {
+    func create(req: Request) async throws -> GetWorkshopsDetailResponseDTO {
         let dto = try req.content.decode(CreateWorkshopDTO.self)
-        let workshop = dto.convertToWorshop()
-        try await workshop.create(on: req.db)
-        return workshop
-    }
-
-//UPDATE
-    func update(req: Request) async throws -> Workshop {
-        guard let id = req.parameters.get("id", as: UUID.self) else {
-            throw Abort(.badRequest, reason: "Identifiant invalide.")
+        
+        guard !dto.name.isEmpty else {
+            throw Abort(
+                .badRequest,
+                reason: "Workshop name is mandatory."
+            )
         }
+        
+        guard dto.startTime < dto.endTime else {
+            throw Abort(
+                .badRequest,
+                reason: "Start time must be before end time."
+            )
+        }
+        
+        guard dto.capacityMax > 0 else {
+            throw Abort(
+                .badRequest,
+                reason: "Capacity must be greater than 0."
+            )
+        }
+        
+        guard try await Category.find(dto.categoryID, on: req.db) != nil else {
+            throw Abort(
+                .notFound,
+                reason: "Category not found."
+            )
+        }
+        
+        let workshop = dto.convertToWorshop()
+        
+        try await workshop.create(on: req.db)
+        
+        let category = try await workshop.$category.get(on: req.db)
+        
+        return try workshop.convertToWorkshopDetailDTO(category: category)
+    }
+    
+    //UPDATE
+    func update(req: Request) async throws -> GetWorkshopsDetailResponseDTO {
+        
+        guard let id = req.parameters.get(
+            "id", as: UUID.self
+        ) else {
+            throw Abort (.badRequest, reason: "Invalid ID.")
+        }
+        
         
         guard let workshop = try await Workshop.find(id, on: req.db) else {
-            throw Abort(.notFound, reason: "Workshop introuvable.")
+            throw Abort(.notFound, reason: "Workshop not found.")
         }
         
-        let newWorkshop = try req.content.decode(Workshop.self)
+        let dto = try req.content.decode(UpdateWorkshopDTO.self)
         
-        guard !newWorkshop.name.isEmpty else {
-            throw Abort(.badRequest, reason: "Workshop est obligatoire.")
+        guard !dto.name.isEmpty else {
+            throw Abort(
+                .badRequest,
+                reason: "Workshop name is mandatory."
+            )
         }
         
-        workshop.name = newWorkshop.name
+        guard dto.startTime < dto.endTime else {
+            throw Abort(
+                .badRequest,
+                reason: "Start time must be before end time."
+            )
+        }
+        
+        guard dto.capacityMax > 0 else {
+            throw Abort(.badRequest, reason: "Capacity must be greater than 0.")
+        }
+        guard dto.capacityMax >= workshop.totalSubscribers else {
+            throw Abort(
+                .badRequest,
+                reason: "Capacity cannot be lower than the number of subscribers."
+            )
+        }
+        
+        guard try await Category.find(dto.categoryID, on: req.db) != nil else {
+            throw Abort(
+                .notFound,
+                reason: "Category not found."
+            )
+        }
+        
+        workshop.name = dto.name
+        workshop.startTime = dto.startTime
+        workshop.endTime = dto.endTime
+        workshop.capacityMax = dto.capacityMax
+        workshop.description = dto.description
+        workshop.$category.id = dto.categoryID
         
         try await workshop.update(on: req.db)
         
-        return workshop
+        let category = try await workshop.$category.get(on: req.db)
+        
+        
+        return try workshop.convertToWorkshopDetailDTO(category: category)
     }
-
-//DELETE
+    
+    //DELETE
+    
     func delete(req: Request) async throws -> HTTPStatus {
         
         guard let id = req.parameters.get("id", as: UUID.self) else {
-            throw Abort(.badRequest, reason: "Identifiant invalide.")
+            throw Abort(
+                .badRequest,
+                reason: "Invalid workshop ID."
+            )
         }
         
         guard let workshop = try await Workshop.find(id, on: req.db) else {
-            throw Abort(.notFound, reason: "Workshop introuvable.")
+            throw Abort(
+                .notFound,
+                reason: "Workshop not found."
+            )
         }
         
         try await workshop.delete(on: req.db)
+        
         return .noContent
     }
 }
-
