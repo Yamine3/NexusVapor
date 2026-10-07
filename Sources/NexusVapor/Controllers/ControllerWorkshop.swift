@@ -12,14 +12,33 @@ struct ControllerWorkshop: RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let workshops = routes.grouped("workshops")
         
-        workshops.get(use: index)
-        workshops.post(use: create)
+        //Pour le festivalGoer / le staff authentifié
+        let authenticatedRoutes = workshops.grouped(
+            JWTMiddleware()
+        )
         
-        workshops.group(":id") { workshop in
+        //GET /workshops (liste des workshops)
+        authenticatedRoutes.get(use: index)
+        
+        //Get /workshops/:id (détail d'un workshop)
+        authenticatedRoutes.get(":id", use : show)
+        
+        
+        //pour le staff
+        let staffRoutes = workshops.grouped(
+            JWTMiddleware(), EnsureStaffMiddleware()
+        )
+        //POST /workshops
+        staffRoutes.post(use: create)
+        
+        //PUT /workshops/:id
+        //DELETE /workshops/:id
+        staffRoutes.group(":id") { workshop in
             workshop.put(use: update)
             workshop.delete(use: delete)
-            workshop.get(use: show)
         }
+        
+ 
     }
     
     //INDEX

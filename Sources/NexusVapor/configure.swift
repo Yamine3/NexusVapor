@@ -18,7 +18,9 @@ func configure(_ app: Application) async throws {
     ), as: .mysql)
     
     let corsConfiguration = CORSMiddleware.Configuration(
-        allowedOrigin: .all, allowedMethods: [.GET,.POST,.PUT,.DELETE,.OPTIONS],
+        allowedOrigin: .all,
+        //plus tard .custom("http://localhost:0000")
+        allowedMethods: [.GET,.POST,.PUT,.DELETE,.OPTIONS],
         allowedHeaders: [.accept, .authorization, .contentType, .origin],
         cacheExpiration: 800
     )

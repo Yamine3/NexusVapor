@@ -13,23 +13,21 @@ struct UserController: RouteCollection {
     
     func boot(routes: any RoutesBuilder) throws {
         let users = routes.grouped("users")
-        users.get(use: index)
-        users.post(use: create)
-        users.post("login", use: login)
         
+        //PUBLIC
+        //POST /users
+        users.post(use: create) //crée un nouvel utilisateur
+        
+        //POST /users/login
+        users.post("login", use: login) //connexion d'un utilisateur
+        
+        //Pour les utilisateurs authentifiés (festivalGoer + Staff)
         let protectedRoutes = users.grouped(JWTMiddleware())
-        protectedRoutes.get("profile", use: profile)
         
-        protectedRoutes.group(":userID") { user in
-            user.get(use: getUserById)
-
-        }
+        protectedRoutes.get("profile", use: profile)
+        //accès aux infos d'un utilisateur
     }
     
-    @Sendable
-    func index(req:Request) async throws -> [UserDTO] {
-        try await UserModel.query(on: req.db).all().map { $0.toDTO() }
-    }
     
     @Sendable
     func create(req:Request) async throws -> UserDTO {
@@ -48,16 +46,18 @@ struct UserController: RouteCollection {
             .filter(\.$email == userRequest.email)
             .first()
         else {
-            throw Abort(.notFound, reason: "L'utilisateur n'existe pas")
+            throw Abort(.unauthorized, reason: "Invalid email or password.")
         }
         
         guard try Bcrypt.verify(userRequest.password, created: userDB.password)
         else {
-            throw Abort(.notFound, reason: "Mot de passe incorrect")
+            throw Abort(.unauthorized, reason: "Invalid email or password.")
         }
         
         let payload = UserPayload(id: userDB.id!)
+        
         let signer = JWTSigner.hs256(key: Environment.get("SECRET_KEY")!)
+        
         let jwToken = try signer.sign(payload)
         
         return AuthDTO(token: jwToken)
@@ -68,16 +68,17 @@ struct UserController: RouteCollection {
         let payload = try req.auth.require(UserPayload.self)
         guard let userDB = try await UserModel.find(payload.id, on: req.db)
         else {
-            throw Abort(.notFound, reason: "L'utilisateur n'existe pas")
+            throw Abort(.notFound, reason: "User does not exist.")
         }
         return userDB.toDTO()
     }
-    
+
+    /*
     @Sendable
     func getUserById(req: Request) async throws -> UserDTO {
         guard let userIdReq = req.parameters.get("userID") as UUID?
         else {
-            throw Abort(.notFound, reason: "L'utilisateur n'existe pas")
+            throw Abort(.notFound, reason: "User does not exist.")
         }
         
         if let sql = req.db as? (any SQLDatabase) {
@@ -86,14 +87,14 @@ struct UserController: RouteCollection {
             
             guard let foundUser = users.first
             else {
-                throw Abort(.notFound, reason: "Utilisateur non trouvé.")
+                throw Abort(.notFound, reason: "User not found.")
             }
             
             return foundUser.toDTO()
         }
         
-        throw Abort(.internalServerError, reason: "La base de données n'est pas de type SQL.")
+        throw Abort(.internalServerError, reason: "The data base is not of type SQL.")
     }
     
-    
+*/
 }
