@@ -20,7 +20,7 @@ final class JWTMiddleware: Middleware {
         do {
             payload = try signer.verify(String(token), as: UserPayload.self)
         } catch {
-            return request.eventLoop.future(error: Abort(.unauthorized, reason: "invalid Token"))
+            return request.eventLoop.future(error: Abort(.unauthorized, reason: "Invalid Token."))
         }
         
         request.auth.login(payload)

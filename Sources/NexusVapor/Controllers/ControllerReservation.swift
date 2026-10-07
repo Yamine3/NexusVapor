@@ -13,9 +13,20 @@ struct ControllerReservation : RouteCollection {
     func boot(routes: any RoutesBuilder) throws {
         let reservations = routes.grouped("reservations")
         
-        reservations.get(use: index)
-        reservations.post(use: create)
-        reservations.delete(use: cancel)
+        //Pour le festivalGoer et le staff = toutes personne qui est authentifiée
+        let authenticatedRoutes = reservations.grouped(
+            JWTMiddleware()
+        )
+        
+        authenticatedRoutes.post(use: create)
+        authenticatedRoutes.delete(":id", use: cancel)
+        
+        //Pour le staff
+        let staffRoutes = reservations.grouped(
+            JWTMiddleware(), EnsureStaffMiddleware()
+        )
+        staffRoutes.get(use: index)
+        
     }
     
     //GET ALL
@@ -38,6 +49,8 @@ struct ControllerReservation : RouteCollection {
         
         let dto = try req.content.decode(CreateReservationDTO.self)
         
+        let payload = try req.auth.require(UserPayload.self)
+        
         guard let workshop = try await Workshop.find(
             dto.workshopID,
             on: req.db
@@ -48,8 +61,9 @@ struct ControllerReservation : RouteCollection {
             )
         }
         
-        guard try await User.find(
-            dto.userID,
+        guard try await UserModel.find(
+            payload.id,
+            // avant dto.userID
             on: req.db
         ) != nil else {
             throw Abort(
@@ -61,7 +75,8 @@ struct ControllerReservation : RouteCollection {
         guard try await Reservation
             .query(on: req.db)
             .filter(\.$workshop.$id == dto.workshopID)
-            .filter(\.$user.$id == dto.userID)
+            .filter(\.$user.$id == payload.id)
+                //avant dto.userID
             .filter(\.$status == .validated)
             .first() == nil
                 else {
@@ -78,7 +93,8 @@ struct ControllerReservation : RouteCollection {
             )
         }
         
-        let reservation = Reservation(status: .validated, workshopID: dto.workshopID, userID: dto.userID)
+        let reservation = Reservation(status: .validated, workshopID: dto.workshopID, userID: payload.id)
+        //avant dto.userID
         
         try await reservation.create(on: req.db)
         
@@ -93,6 +109,9 @@ struct ControllerReservation : RouteCollection {
     
     //cancel
     func cancel (req: Request) async throws -> HTTPStatus {
+        
+        let payload = try req.auth.require(UserPayload.self)
+        
         guard let id = req.parameters.get(
             "id", as: UUID.self
         ) else {
@@ -102,8 +121,28 @@ struct ControllerReservation : RouteCollection {
         guard let reservation = try await Reservation.find(id, on: req.db)
                 else { throw Abort(.notFound, reason: "Reservation not found.") }
         
+        guard let currentUser = try await UserModel.find(
+            payload.id,
+            on: req.db
+        ) else {
+            throw Abort(.unauthorized)
+        }
+
+//un festivalGoer peut seulement annuler sa réservation
+//un staff peut annuler n'importe quelle réservation
+//Si je ne suis pas staff ET que la réservation ne m'appartient pas -> interdiction d'annuler
+//Donc festivalGoer + ma résa c'est OK
+//staff + résa de quelqu'un d'autre c'est OK
+        
+        if currentUser.role != .staff && reservation.$user.id != payload.id {
+            throw Abort(
+                .forbidden,
+                reason: "You are not authorized to cancel this reservation."
+            )
+        }
+
         guard reservation.status == .validated
-                else { throw Abort(.badRequest)}
+                else { throw Abort(.badRequest, reason: "Reservation cannot be cancelled.")}
         
         reservation.status = .cancelled
         

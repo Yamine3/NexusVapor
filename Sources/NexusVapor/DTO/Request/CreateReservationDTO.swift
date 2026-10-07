@@ -12,7 +12,7 @@ struct CreateReservationDTO: Content {
 //    let status: ReservationStatus
     //statut ne vient pas du front
     let workshopID: UUID
-    let userID: UUID
+//    let userID: UUID
         //le backend devrait connaître l'utilisateur qui fait la request quand on fera le JWT
     
 //    func convertToReservation() -> Reservation {
