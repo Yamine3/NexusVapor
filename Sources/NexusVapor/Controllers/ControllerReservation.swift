@@ -7,18 +7,24 @@
 
 import Fluent
 import Vapor
+import Gatekeeper
 
 struct ControllerReservation : RouteCollection {
     
     func boot(routes: any RoutesBuilder) throws {
         let reservations = routes.grouped("reservations")
         
+        let reservationRoutes = reservations.grouped(
+            GatekeeperMiddleware(),
+            JWTMiddleware()
+        )
+        reservationRoutes.post(use: create)
         //Pour le festivalGoer et le staff = toutes personne qui est authentifiée
         let authenticatedRoutes = reservations.grouped(
             JWTMiddleware()
         )
-        
-        authenticatedRoutes.post(use: create)
+
+//        authenticatedRoutes.post(use: create)
         authenticatedRoutes.delete(":id", use: cancel)
         
         //Pour le staff
@@ -26,7 +32,7 @@ struct ControllerReservation : RouteCollection {
             JWTMiddleware(), EnsureStaffMiddleware()
         )
         staffRoutes.get(use: index)
-        
+        staffRoutes.get("workshops",":workshopID","attendees", use: attendees)
     }
     
     //GET ALL
@@ -127,12 +133,12 @@ struct ControllerReservation : RouteCollection {
         ) else {
             throw Abort(.unauthorized)
         }
-
-//un festivalGoer peut seulement annuler sa réservation
-//un staff peut annuler n'importe quelle réservation
-//Si je ne suis pas staff ET que la réservation ne m'appartient pas -> interdiction d'annuler
-//Donc festivalGoer + ma résa c'est OK
-//staff + résa de quelqu'un d'autre c'est OK
+        
+        //un festivalGoer peut seulement annuler sa réservation
+        //un staff peut annuler n'importe quelle réservation
+        //Si je ne suis pas staff ET que la réservation ne m'appartient pas -> interdiction d'annuler
+        //Donc festivalGoer + ma résa c'est OK
+        //staff + résa de quelqu'un d'autre c'est OK
         
         if currentUser.role != .staff && reservation.$user.id != payload.id {
             throw Abort(
@@ -140,7 +146,7 @@ struct ControllerReservation : RouteCollection {
                 reason: "You are not authorized to cancel this reservation."
             )
         }
-
+        
         guard reservation.status == .validated
                 else { throw Abort(.badRequest, reason: "Reservation cannot be cancelled.")}
         
@@ -155,5 +161,26 @@ struct ControllerReservation : RouteCollection {
         try await workshop.update(on: req.db)
         
         return .noContent
+    }
+    
+//GET /reservations/workshops/:workshopID/attendees
+    func attendees(req: Request) async throws -> [WorkshopAttendeeResponseDTO] {
+        
+        guard let workshopID = req.parameters.get(
+            "workshopID",
+            as: UUID.self
+        ) else {
+            throw Abort(.badRequest, reason: "Invalid workshop ID.")
+        }
+        
+        let reservations = try await Reservation
+            .query(on: req.db)
+            .filter(\.$workshop.$id == workshopID)
+            .with(\.$user)
+            .all()
+        
+        return try reservations.map {
+            try $0.convertToWorkshopAttendeeDTO()
+        }
     }
 }

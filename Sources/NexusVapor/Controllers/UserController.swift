@@ -8,6 +8,7 @@ import Vapor
 import Fluent
 import JWT
 import FluentSQL
+import Gatekeeper
 
 struct UserController: RouteCollection {
     
@@ -18,8 +19,10 @@ struct UserController: RouteCollection {
         //POST /users
         users.post(use: create) //crée un nouvel utilisateur
         
-        //POST /users/login
-        users.post("login", use: login) //connexion d'un utilisateur
+        //POST /users/login + rate limiting
+        let loginRoutes = users.grouped(GatekeeperMiddleware())
+        
+       loginRoutes.post("login", use: login) //connexion d'un utilisateur
         
         //Pour les utilisateurs authentifiés (festivalGoer + Staff)
         let protectedRoutes = users.grouped(JWTMiddleware())
