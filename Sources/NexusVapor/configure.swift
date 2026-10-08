@@ -3,6 +3,7 @@ import Fluent
 import FluentMySQLDriver
 import Leaf
 import Vapor
+import Gatekeeper
 
 /// configures your application
 func configure(_ app: Application) async throws {
@@ -27,12 +28,19 @@ func configure(_ app: Application) async throws {
     
     let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
 
+    app.caches.use(.memory)
+    app.gatekeeper.config = .init(
+        maxRequests: 2,
+        per: .minute
+    )
+    app.middleware.use(corsMiddleware)
+    
     // app.migrations.add()
     app.migrations.add(CreateCategory())
     app.migrations.add(CreateUser())
     app.migrations.add(CreateWorkshop())
     app.migrations.add(CreateReservation())
-    app.middleware.use(corsMiddleware)
+    
 
     app.views.use(.leaf)
 
