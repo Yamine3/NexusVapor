@@ -29,4 +29,15 @@ struct NexusVaporTests {
             })
         }
     }
+    
+    @Test("Post /workshops crée un workshop")
+    func createBook() async throws {
+        try await withApp { app in
+            try await app.testing().test(.POST, "oui") { res async in
+                //#expect(res.status = )
+            }
+            
+        }
+    }
 }
+ 

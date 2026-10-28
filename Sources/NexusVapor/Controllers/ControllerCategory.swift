@@ -18,11 +18,11 @@ struct ControllerCategory: RouteCollection {
         )
        authenticatedRoutes.get(use: index)
         
-//        let staffRoutes = categories.grouped(
-//            JWTMiddleware(),
-//            EnsureStaffMiddleware()
-//        )
-//        staffRoutes.post(use: create)
+        let staffRoutes = categories.grouped(
+            JWTMiddleware(),
+            EnsureStaffMiddleware()
+        )
+        staffRoutes.post(use: create)
     }
     
     func index(req: Request) async throws -> [Category] {
@@ -31,11 +31,11 @@ struct ControllerCategory: RouteCollection {
             .all()
     }
     
-//    func create(req: Request) async throws -> Category {
-//        let category = try req.content.decode(Category.self)
-//        try await category.create(on: req.db)
-//        return category
-//    }
+    func create(req: Request) async throws -> Category {
+        let category = try req.content.decode(Category.self)
+        try await category.create(on: req.db)
+        return category
+    }
     
     
 }
