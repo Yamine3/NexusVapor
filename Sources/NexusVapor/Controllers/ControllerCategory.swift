@@ -33,6 +33,13 @@ struct ControllerCategory: RouteCollection {
     
     func create(req: Request) async throws -> Category {
         let category = try req.content.decode(Category.self)
+
+        category.name = category.name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if category.name.isEmpty {
+            throw Abort(.badRequest)
+        }
+
         try await category.create(on: req.db)
         return category
     }

@@ -9,13 +9,13 @@ import Fluent
 import Vapor
 import Gatekeeper
 
+
 struct ControllerReservation : RouteCollection {
     
     func boot(routes: any RoutesBuilder) throws {
         let reservations = routes.grouped("reservations")
         
         let reservationRoutes = reservations.grouped(
-            GatekeeperMiddleware(),
             JWTMiddleware()
         )
         reservationRoutes.post(use: create)

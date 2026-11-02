@@ -31,11 +31,6 @@ func configure(_ app: Application) async throws {
     )
     
     let corsMiddleware = CORSMiddleware(configuration: corsConfiguration)
-    
-    let decoderConfiguration = URLEncodedFormDecoder(
-        configuration: .init(dateDecodingStrategy: .iso8601)
-    )
-    ContentConfiguration.global.use(urlDecoder: decoderConfiguration)
 
     app.caches.use(.memory)
     app.gatekeeper.config = .init(
@@ -43,6 +38,10 @@ func configure(_ app: Application) async throws {
         per: .minute
     )
     app.middleware.use(corsMiddleware, at: .beginning)
+    
+    if app.environment != .testing {
+        app.middleware.use(GatekeeperMiddleware())
+    }
     
     // app.migrations.add()
     app.migrations.add(CreateCategory())
