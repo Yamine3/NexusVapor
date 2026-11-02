@@ -48,6 +48,10 @@ func configure(_ app: Application) async throws {
     app.migrations.add(CreateUser())
     app.migrations.add(CreateWorkshop())
     app.migrations.add(CreateReservation())
+
+    if app.environment != .testing {
+        app.migrations.add(SeedData())
+    }
     
 
     app.views.use(.leaf)
