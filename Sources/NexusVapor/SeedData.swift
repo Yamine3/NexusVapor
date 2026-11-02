@@ -2,13 +2,6 @@
 //  SeedData.swift
 //  NexusVapor
 //
-//  Created by Apprenant 109 on 02/11/2026.
-//
-
-//
-//  SeedData.swift
-//  NexusVapor
-//
 //  Migration that inserts test data (anime / manga / video games / sci-fi / cinema theme).
 //  Password of every test account: Password123!
 //
@@ -28,14 +21,14 @@ struct SeedData: AsyncMigration {
     ]
 
     private let seedUserEmails = [
-        "staff@herofestival.com",    // 0
-        "alice@herofestival.com",    // 1
-        "bob@herofestival.com",      // 2
-        "chloe@herofestival.com",    // 3
-        "david@herofestival.com",    // 4
-        "emma@herofestival.com",     // 5
-        "hugo@herofestival.com",     // 6
-        "lina@herofestival.com"      // 7
+        "staff@nexusfestival.com",    // 0
+        "alice@nexusfestival.com",    // 1
+        "bob@nexusfestival.com",      // 2
+        "chloe@nexusfestival.com",    // 3
+        "david@nexusfestival.com",    // 4
+        "emma@nexusfestival.com",     // 5
+        "hugo@nexusfestival.com",     // 6
+        "lina@nexusfestival.com"      // 7
     ]
 
     private let seedWorkshopNames = [
@@ -51,7 +44,8 @@ struct SeedData: AsyncMigration {
         "Worldbuilding: create a space saga",          // 9  - SCI-FI
         "Stunt choreography: fight like a movie hero", // 10 - Cinema
         "Film your own one-minute short",              // 11 - Cinema
-        "Anime dubbing: lend your voice"               // 12 - Cinema (2 spots)
+        "Anime dubbing: lend your voice",              // 12 - Cinema (2 spots)
+        "Star Wars: lightsaber duel academy"           // 13 - SCI-FI (3 spots, full)
     ]
 
     // Small helper to build a date (Paris time zone)
@@ -202,6 +196,14 @@ struct SeedData: AsyncMigration {
                 capacityMax: 2, totalSubscribers: 0,
                 description: "Lend your voice to an anime character in front of a mic, just like in a dubbing studio.",
                 categoryID: try cinema.requireID()
+            ),
+            // Star Wars workshop: 3 spots, all taken -> "Workshop is full."
+            Workshop(
+                name: seedWorkshopNames[13],
+                startTime: date(2027, 7, 11, 18), endTime: date(2027, 7, 11, 20),
+                capacityMax: 3, totalSubscribers: 0,
+                description: "Train like a Jedi: learn lightsaber forms, duel choreography and the way of the Force with a Star Wars stunt coach.",
+                categoryID: try sciFi.requireID()
             )
         ]
         for workshop in workshops {
@@ -239,7 +241,11 @@ struct SeedData: AsyncMigration {
             (6, 10, .validated),  // Hugo  -> stunt choreography
             (5, 11, .validated),  // Emma  -> short film
             (1, 12, .validated),  // Alice -> anime dubbing
-            (2, 12, .validated)   // Bob   -> anime dubbing (the workshop becomes full)
+            (2, 12, .validated),  // Bob   -> anime dubbing (the workshop becomes full)
+            // Star Wars (full: 3/3)
+            (1, 13, .validated),  // Alice -> lightsaber duel
+            (4, 13, .validated),  // David -> lightsaber duel
+            (6, 13, .validated)   // Hugo  -> lightsaber duel (the workshop becomes full)
         ]
 
         for (userIndex, workshopIndex, status) in plan {
