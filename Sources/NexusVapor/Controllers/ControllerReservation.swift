@@ -14,18 +14,15 @@ struct ControllerReservation : RouteCollection {
     
     func boot(routes: any RoutesBuilder) throws {
         let reservations = routes.grouped("reservations")
-        
-        let reservationRoutes = reservations.grouped(
-            JWTMiddleware()
-        )
-        reservationRoutes.post(use: create)
+
         //Pour le festivalGoer et le staff = toutes personne qui est authentifiée
         let authenticatedRoutes = reservations.grouped(
             JWTMiddleware()
         )
-
+        authenticatedRoutes.post(use: create)
 //        authenticatedRoutes.post(use: create)
         authenticatedRoutes.delete(":id", use: cancel)
+        authenticatedRoutes.get(use: getReservationList)
         
         //Pour le staff
         let staffRoutes = reservations.grouped(
@@ -33,6 +30,23 @@ struct ControllerReservation : RouteCollection {
         )
         staffRoutes.get(use: index)
         staffRoutes.get("workshops",":workshopID","attendees", use: attendees)
+    }
+    
+    func getReservationList(req:Request) async throws -> [GetReservationListItemResponseDTO] {
+        let payload = try req.auth.require(UserPayload.self)
+
+        let reservations = try await Reservation
+            .query(on: req.db)
+            .with(\.$workshop,
+                   { workshop in workshop.with(\.$category) }
+            )
+            .with(\.$user)
+            .filter(\.$user.$id == payload.id)
+            .all()
+        
+        return try reservations.map {
+            try $0.convertToReservationListDTO()
+        }
     }
     
     //GET ALL
