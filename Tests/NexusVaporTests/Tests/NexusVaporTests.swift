@@ -94,7 +94,34 @@ struct NexusVaporTests {
         )
     }
     
-    @Test("Staff connexion")
+    @Test("/GET Index Categories")
+    func indexCategories() async throws {
+        try await withApp { app in
+            
+            let token = try await tokenFestivalGoer(app)
+            
+            let category = CategoryModel(name : "Mangas")
+            try await category.save(on: app.db)
+            let category2 = CategoryModel(name : "Jeux")
+            try await category2.save(on: app.db)
+            
+            try await app.testing().test(
+                .GET, "categories",
+                beforeRequest: { req in
+                    req.headers.bearerAuthorization = BearerAuthorization(token: token)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    let categories = try res.content.decode([CategoryModel].self)
+                    #expect(categories.count == 2)
+                    #expect(categories.map(\.name).contains("Mangas"))
+                    #expect(categories.map(\.name).contains("Jeux"))
+                }
+            )
+        }
+    }
+    
+    @Test("/POST Staff connexion")
     func staffLogin() async throws {
         try await withApp { app in
             try await createUserTest(app)
@@ -119,7 +146,7 @@ struct NexusVaporTests {
         }
     }
     
-    @Test("Login wrong password")
+    @Test("/POST Login wrong password")
     func loginWrongPassword() async throws {
         try await withApp { app in
             try await createUserTest(app)
@@ -138,7 +165,7 @@ struct NexusVaporTests {
         }
     }
     
-    @Test("Login wrong email")
+    @Test("/POST Login wrong email")
     func loginWrongEmail() async throws {
         try await withApp { app in
             try await createUserTest(app)
@@ -157,7 +184,7 @@ struct NexusVaporTests {
         }
     }
     
-    @Test("Category creation")
+    @Test("/POST Category creation")
     func creationCategory() async throws {
         try await withApp { app in
             let token = try await tokenStaff(app)
@@ -166,7 +193,6 @@ struct NexusVaporTests {
                 id: UUID(),
                 name: "Mangas"
             )
-
             try await app.testing().test(
                 .POST, "categories",
                 beforeRequest: { req in
@@ -175,18 +201,68 @@ struct NexusVaporTests {
                 },
                 afterResponse: { res async throws in
                     #expect(res.status == .ok)
-                    let category = try res.content.decode(Category.self)
+                    let category = try res.content.decode(CategoryModel.self)
                     #expect(category.name == "Mangas")
                     #expect(category.id != nil)
                 }
             )
 
-            let count = try await Category.query(on: app.db).count()
+            let count = try await CategoryModel.query(on: app.db).count()
             #expect(count == 1)
         }
     }
     
-    @Test("POST Expecting bad request")
+    @Test("/POST Category creation with the wrong token")
+    func creationCategoryFailed() async throws {
+        try await withApp { app in
+            let token = try await tokenFestivalGoer(app)
+            
+            let categoryDTO = CategoryDTO(
+                id: UUID(),
+                name: "Mangas"
+            )
+            try await app.testing().test(
+                .POST, "categories",
+                beforeRequest: { req in
+                    req.headers.bearerAuthorization = BearerAuthorization(token: token)
+                    try req.content.encode(categoryDTO)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .forbidden)
+                }
+            )
+
+            let count = try await CategoryModel.query(on: app.db).count()
+            #expect(count == 0)
+        }
+    }
+    
+    @Test("/POST Category creation with no name")
+    func creationCategoryWithNoName() async throws {
+        try await withApp { app in
+            let token = try await tokenStaff(app)
+            
+            let categoryDTO = CategoryDTO(
+                id: UUID(),
+                name: " "
+            )
+            try await app.testing().test(
+                .POST, "categories",
+                beforeRequest: { req in
+                    req.headers.bearerAuthorization = BearerAuthorization(token: token)
+                    try req.content.encode(categoryDTO)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .badRequest)
+                }
+            )
+
+            let count = try await CategoryModel.query(on: app.db).count()
+            #expect(count == 0)
+        }
+    }
+    
+    @Test("/POST Expecting bad request")
         func postCategoryNegative() async throws{
             try await withApp { app in
                 let token = try await tokenStaff(app)
@@ -195,7 +271,9 @@ struct NexusVaporTests {
                     id: UUID(),
                     name: ""
                 )
-                try await app.testing().test(.POST, "categories", beforeRequest: { req in
+                try await app.testing().test(
+                    .POST, "categories",
+                    beforeRequest: { req in
                     req.headers.bearerAuthorization = BearerAuthorization(token: token)
                     try req.content.encode(categoryDTO)
                 }, afterResponse: { res async throws in
@@ -204,12 +282,12 @@ struct NexusVaporTests {
             }
         }
     
-    @Test("Workshop creation")
+    @Test("/POST Workshop creation")
     func workshopCreation() async throws {
         try await withApp { app in
             let token = try await tokenStaff(app)
             
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshopDTO = CreateWorkshopDTO(
@@ -237,12 +315,12 @@ struct NexusVaporTests {
         }
     }
     
-    @Test("Workshop creation empty name")
+    @Test("/POST Workshop creation empty name")
     func workshopCreationEmptyName() async throws {
         try await withApp { app in
             let token = try await tokenStaff(app)
             
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshopDTO = CreateWorkshopDTO(
@@ -267,12 +345,12 @@ struct NexusVaporTests {
         }
     }
     
-    @Test("Workshop creation empty capacity")
+    @Test("/POST Workshop creation empty capacity")
     func workshopCreationEmptyCapacity() async throws {
         try await withApp { app in
             let token = try await tokenStaff(app)
             
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshopDTO = CreateWorkshopDTO(
@@ -297,12 +375,12 @@ struct NexusVaporTests {
         }
     }
     
-    @Test("Workshop update")
+    @Test("/PUT Workshop update")
     func workshopUpdate() async throws {
         try await withApp { app in
             let token = try await tokenStaff(app)
 
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshop = Workshop(
@@ -341,12 +419,12 @@ struct NexusVaporTests {
         }
     }
     
-    @Test("Workshop update failed")
+    @Test("/PUT Workshop update failed")
     func workshopUpdateFailed() async throws {
         try await withApp { app in
             let token = try await tokenStaff(app)
 
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshop = Workshop(
@@ -382,12 +460,12 @@ struct NexusVaporTests {
         }
     }
     
-    @Test("Workshop delete")
+    @Test("/DELETE Workshop delete")
     func workshopDelete() async throws {
         try await withApp { app in
             let token = try await tokenStaff(app)
 
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshop = Workshop(
@@ -413,12 +491,12 @@ struct NexusVaporTests {
             let workshopCount = try await Workshop.query(on: app.db).count()
             #expect(workshopCount == 0)
 
-            let categoryCount = try await Category.query(on: app.db).count()
+            let categoryCount = try await CategoryModel.query(on: app.db).count()
             #expect(categoryCount == 1)
         }
     }
     
-    @Test("Workshop delete unknown id")
+    @Test("/DELETE Workshop delete unknown id")
     func workshopDeleteUnknownId() async throws {
         try await withApp { app in
             let token = try await tokenStaff(app)
@@ -435,12 +513,12 @@ struct NexusVaporTests {
         }
     }
     
-    @Test("Workshops index")
+    @Test("/GET Workshops index")
     func workshopsIndex() async throws {
         try await withApp { app in
             let token = try await tokenFestivalGoer(app)
 
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshop = Workshop(
@@ -466,12 +544,12 @@ struct NexusVaporTests {
         }
     }
 
-    @Test("Workshop show")
+    @Test("/GET Workshop show")
     func workshopShow() async throws {
         try await withApp { app in
             let token = try await tokenFestivalGoer(app)
 
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshop = Workshop(
@@ -500,12 +578,12 @@ struct NexusVaporTests {
         }
     }
     
-    @Test("Reservation creation")
+    @Test("/POST Reservation creation")
     func reservationCreation() async throws {
         try await withApp { app in
             let token = try await tokenFestivalGoer(app)
 
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshop = Workshop(
@@ -535,13 +613,45 @@ struct NexusVaporTests {
             )
         }
     }
+    
+    @Test("/POST Reservation creation without token")
+    func reservationCreationWithoutToken() async throws {
+        try await withApp { app in
+            let category = CategoryModel(name : "Mangas")
+            try await category.save(on: app.db)
 
-    @Test("Reservation twice on the same workshop")
+            let workshop = Workshop(
+                name: "Atelier dessin",
+                startTime: Date(),
+                endTime: Date().addingTimeInterval(3600),
+                capacityMax: 10,
+                totalSubscribers: 0,
+                description: "Apprendre à dessiner un personnage",
+                categoryID: category.id!
+            )
+            try await workshop.save(on: app.db)
+
+            let reservationDTO = CreateReservationDTO(workshopID: workshop.id!)
+
+            try await app.testing().test(
+                .POST, "reservations",
+                beforeRequest: { req in
+                    try req.content.encode(reservationDTO)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .unauthorized)
+
+                }
+            )
+        }
+    }
+
+    @Test("/POST Reservation twice on the same workshop")
     func reservationTwice() async throws {
         try await withApp { app in
             let token = try await tokenFestivalGoer(app)
 
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshop = Workshop(
@@ -575,12 +685,12 @@ struct NexusVaporTests {
         }
     }
 
-    @Test("Reservation workshop full")
+    @Test("/POST Reservation workshop full")
     func reservationWorkshopFull() async throws {
         try await withApp { app in
             let token = try await tokenFestivalGoer(app)
 
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshop = Workshop(
@@ -612,12 +722,12 @@ struct NexusVaporTests {
         }
     }
 
-    @Test("Reservation cancel")
+    @Test("/POST Reservation cancel")
     func reservationCancel() async throws {
         try await withApp { app in
             let token = try await tokenFestivalGoer(app)
 
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshop = Workshop(
@@ -642,6 +752,7 @@ struct NexusVaporTests {
                 },
                 afterResponse: { res async throws in
                     #expect(res.status == .ok)
+                    reservationID = try res.content.decode(ReservationResponseDTO.self).id
                 }
             )
             
@@ -657,13 +768,13 @@ struct NexusVaporTests {
         }
     }
 
-    @Test("Reservations index")
+    @Test("/GET Reservations index")
     func reservationsIndex() async throws {
         try await withApp { app in
             let userToken = try await tokenFestivalGoer(app)
             let staffToken = try await tokenStaff(app)
 
-            let category = Category(name : "Mangas")
+            let category = CategoryModel(name : "Mangas")
             try await category.save(on: app.db)
 
             let workshop = Workshop(

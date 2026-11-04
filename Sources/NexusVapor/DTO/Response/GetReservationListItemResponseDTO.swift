@@ -8,6 +8,17 @@
 import Vapor
 import Fluent
 
+//struct GetReservationListItemResponseDTO: Content {
+//    let id: UUID
+//    let workshopID: UUID
+//    let workshopName: String
+//    let category: String
+//    let startTime: Date
+//    let endTime: Date
+//    let capacityMax: Int
+//    let status: ReservationStatus
+//}
+
 struct GetReservationListItemResponseDTO: Content {
     let id: UUID
     let workshop: GetWorkshopsListResponseDTO

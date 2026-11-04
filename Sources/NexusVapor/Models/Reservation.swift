@@ -46,6 +46,20 @@ enum ReservationStatus: String, Codable {
     case cancelled
 }
 
+//extension Reservation {
+//    func convertToReservationListDTO() throws -> GetReservationListItemResponseDTO {
+//        GetReservationListItemResponseDTO(
+//            id: try requireID(),
+//            workshopID: try workshop.requireID(),
+//            workshopName: workshop.name,
+//            category: workshop.category.name,
+//            startTime: workshop.startTime,
+//            endTime: workshop.endTime,
+//            capacityMax: workshop.capacityMax,
+//            status: status
+//        )
+//    }
+//}
 extension Reservation {
     func convertToReservationListDTO() throws -> GetReservationListItemResponseDTO {
         GetReservationListItemResponseDTO(
