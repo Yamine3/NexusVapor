@@ -24,4 +24,3 @@ struct GetReservationListItemResponseDTO: Content {
     let workshop: GetWorkshopsListResponseDTO
     let status: ReservationStatus
 }
-
