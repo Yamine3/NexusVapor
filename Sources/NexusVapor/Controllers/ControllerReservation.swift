@@ -14,15 +14,15 @@ struct ControllerReservation : RouteCollection {
     
     func boot(routes: any RoutesBuilder) throws {
         let reservations = routes.grouped("reservations")
-
+        
         //Pour le festivalGoer et le staff = toutes personne qui est authentifiée
         let authenticatedRoutes = reservations.grouped(
             JWTMiddleware()
         )
         authenticatedRoutes.post(use: create)
-//        authenticatedRoutes.post(use: create)
+        //        authenticatedRoutes.post(use: create)
         authenticatedRoutes.delete(":id", use: cancel)
-        authenticatedRoutes.get(use: getReservationList)
+        authenticatedRoutes.get("me", use: getReservationList)
         
         //Pour le staff
         let staffRoutes = reservations.grouped(
@@ -34,7 +34,7 @@ struct ControllerReservation : RouteCollection {
     
     func getReservationList(req:Request) async throws -> [GetReservationListItemResponseDTO] {
         let payload = try req.auth.require(UserPayload.self)
-
+        
         let reservations = try await Reservation
             .query(on: req.db)
             .with(\.$workshop,
@@ -65,7 +65,8 @@ struct ControllerReservation : RouteCollection {
     }
     
     //CREATE
-    func create(req: Request) async throws -> ReservationResponseDTO{
+    
+    func create(req: Request) async throws -> ReservationResponseDTO {
         
         let dto = try req.content.decode(CreateReservationDTO.self)
         
@@ -83,7 +84,6 @@ struct ControllerReservation : RouteCollection {
         
         guard try await UserModel.find(
             payload.id,
-            // avant dto.userID
             on: req.db
         ) != nil else {
             throw Abort(
@@ -92,20 +92,25 @@ struct ControllerReservation : RouteCollection {
             )
         }
         
-        guard try await Reservation
+        // Recherche d'une réservation existante,
+        // quel que soit son statut.
+        let existingReservation = try await Reservation
             .query(on: req.db)
             .filter(\.$workshop.$id == dto.workshopID)
             .filter(\.$user.$id == payload.id)
-                //avant dto.userID
-            .filter(\.$status == .validated)
-            .first() == nil
-                else {
+            .first()
+        
+        // Si la réservation est déjà validée
+        if let existingReservation,
+           existingReservation.status == .validated {
+            
             throw Abort(
                 .conflict,
-                reason:"User already has a reservation for \(workshop.name)."
+                reason: "User already has a reservation for \(workshop.name)."
             )
         }
         
+        // Vérification des places disponibles
         guard workshop.totalSubscribers < workshop.capacityMax else {
             throw Abort(
                 .conflict,
@@ -113,8 +118,31 @@ struct ControllerReservation : RouteCollection {
             )
         }
         
-        let reservation = Reservation(status: .validated, workshopID: dto.workshopID, userID: payload.id)
-        //avant dto.userID
+        // Si une ancienne réservation est annulée,
+        // on la réactive.
+        if let existingReservation,
+           existingReservation.status == .cancelled {
+            
+            existingReservation.status = .validated
+            
+            try await existingReservation.update(on: req.db)
+            
+            workshop.totalSubscribers += 1
+            
+            try await workshop.update(on: req.db)
+            
+            return ReservationResponseDTO(
+                id: try existingReservation.requireID(),
+                status: existingReservation.status
+            )
+        }
+        
+        // Sinon, création d'une nouvelle réservation
+        let reservation = Reservation(
+            status: .validated,
+            workshopID: dto.workshopID,
+            userID: payload.id
+        )
         
         try await reservation.create(on: req.db)
         
@@ -124,7 +152,8 @@ struct ControllerReservation : RouteCollection {
         
         return ReservationResponseDTO(
             id: try reservation.requireID(),
-            status: reservation.status)
+            status: reservation.status
+        )
     }
     
     //cancel
@@ -139,7 +168,7 @@ struct ControllerReservation : RouteCollection {
         }
         
         guard let reservation = try await Reservation.find(id, on: req.db)
-                else { throw Abort(.notFound, reason: "Reservation not found.") }
+        else { throw Abort(.notFound, reason: "Reservation not found.") }
         
         guard let currentUser = try await UserModel.find(
             payload.id,
@@ -162,7 +191,7 @@ struct ControllerReservation : RouteCollection {
         }
         
         guard reservation.status == .validated
-                else { throw Abort(.badRequest, reason: "Reservation cannot be cancelled.")}
+        else { throw Abort(.badRequest, reason: "Reservation cannot be cancelled.")}
         
         reservation.status = .cancelled
         
@@ -177,7 +206,7 @@ struct ControllerReservation : RouteCollection {
         return .noContent
     }
     
-//GET /reservations/workshops/:workshopID/attendees
+    //GET /reservations/workshops/:workshopID/attendees
     func attendees(req: Request) async throws -> [WorkshopAttendeeResponseDTO] {
         
         guard let workshopID = req.parameters.get(
