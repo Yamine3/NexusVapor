@@ -22,7 +22,7 @@ struct ControllerReservation : RouteCollection {
         authenticatedRoutes.post(use: create)
 //        authenticatedRoutes.post(use: create)
         authenticatedRoutes.delete(":id", use: cancel)
-        authenticatedRoutes.get(use: getReservationList)
+        authenticatedRoutes.get("me", use: getReservationList)
         
         //Pour le staff
         let staffRoutes = reservations.grouped(
@@ -35,7 +35,7 @@ struct ControllerReservation : RouteCollection {
     func getReservationList(req:Request) async throws -> [GetReservationListItemResponseDTO] {
         let payload = try req.auth.require(UserPayload.self)
 
-        let reservations = try await Reservation
+        let reservations = try  await Reservation
             .query(on: req.db)
             .with(\.$workshop,
                    { workshop in workshop.with(\.$category) }
