@@ -62,9 +62,9 @@ struct SeedData: AsyncMigration {
     func prepare(on database: any Database) async throws {
 
         // 1. CATEGORIES
-        var categories: [Category] = []
+        var categories: [CategoryModel] = []
         for name in seedCategoryNames {
-            let category = Category(name: name)
+            let category = CategoryModel(name: name)
             try await category.save(on: database)
             categories.append(category)
         }
@@ -287,7 +287,7 @@ struct SeedData: AsyncMigration {
             .filter(\.$email ~~ seedUserEmails)
             .delete()
 
-        try await Category.query(on: database)
+        try await CategoryModel.query(on: database)
             .filter(\.$name ~~ seedCategoryNames)
             .delete()
     }
