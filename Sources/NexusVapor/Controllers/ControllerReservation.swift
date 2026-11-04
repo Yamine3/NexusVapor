@@ -65,7 +65,6 @@ struct ControllerReservation : RouteCollection {
     }
     
     //CREATE
-    
     func create(req: Request) async throws -> ReservationResponseDTO {
         
         let dto = try req.content.decode(CreateReservationDTO.self)
