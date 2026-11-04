@@ -15,7 +15,7 @@ struct CategoryDTO: Content {
 }
 
 extension CategoryDTO {
-    func toModel() -> Category {
-        return Category(name: name)
+    func toModel() -> CategoryModel {
+        return CategoryModel(name: name)
     }
 }

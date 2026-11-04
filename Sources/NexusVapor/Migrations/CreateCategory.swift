@@ -9,7 +9,7 @@ import Fluent
 struct CreateCategory: AsyncMigration {
     func prepare (on database: any Database) async throws {
         try await database
-            .schema(Category.schema)
+            .schema(CategoryModel.schema)
             .id()
             .field(
                 "name",
@@ -20,7 +20,7 @@ struct CreateCategory: AsyncMigration {
     }
     func revert(on database: any Database) async throws {
         try await database
-            .schema(Category.schema)
+            .schema(CategoryModel.schema)
             .delete()
     }
     

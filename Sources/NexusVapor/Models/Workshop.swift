@@ -34,7 +34,7 @@ final class Workshop: Model, Content , @unchecked Sendable {
     var description: String
     
     @Parent(key: "category_id")
-    var category : Category
+    var category : CategoryModel
     
     @Children(for: \.$workshop)
     var reservations : [Reservation]
@@ -80,7 +80,7 @@ extension Workshop {
 }
 
 extension Workshop {
-    func convertToWorkshopDetailDTO (category: Category) throws -> GetWorkshopsDetailResponseDTO {
+    func convertToWorkshopDetailDTO (category: CategoryModel) throws -> GetWorkshopsDetailResponseDTO {
         return GetWorkshopsDetailResponseDTO (
             id: try requireID(),
             name : name,

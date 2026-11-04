@@ -45,7 +45,7 @@ struct CreateWorkshop: AsyncMigration {
                 "category_id",
                 .uuid,
                 .required,
-                .references(Category.schema, "id")
+                .references(CategoryModel.schema, "id")
             )
             .create()
     }
