@@ -7,7 +7,7 @@
 import Fluent
 import Vapor
 
-final class Category: Model,Content, @unchecked Sendable {
+final class CategoryModel: Model,Content, @unchecked Sendable {
     static let schema = "categories"
     
     @ID(key: .id)

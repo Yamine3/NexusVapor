@@ -18,24 +18,31 @@ struct ControllerCategory: RouteCollection {
         )
        authenticatedRoutes.get(use: index)
         
-//        let staffRoutes = categories.grouped(
-//            JWTMiddleware(),
-//            EnsureStaffMiddleware()
-//        )
-//        staffRoutes.post(use: create)
+        let staffRoutes = categories.grouped(
+            JWTMiddleware(),
+            EnsureStaffMiddleware()
+        )
+        staffRoutes.post(use: create)
     }
     
-    func index(req: Request) async throws -> [Category] {
-        return try await Category
+    func index(req: Request) async throws -> [CategoryModel] {
+        return try await CategoryModel
             .query(on: req.db)
             .all()
     }
     
-//    func create(req: Request) async throws -> Category {
-//        let category = try req.content.decode(Category.self)
-//        try await category.create(on: req.db)
-//        return category
-//    }
+    func create(req: Request) async throws -> CategoryModel {
+        let category = try req.content.decode(CategoryModel.self)
+
+        category.name = category.name.trimmingCharacters(in: .whitespacesAndNewlines)
+
+        if category.name.isEmpty {
+            throw Abort(.badRequest)
+        }
+
+        try await category.create(on: req.db)
+        return category
+    }
     
     
 }

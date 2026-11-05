@@ -18,12 +18,12 @@ struct CreateWorkshop: AsyncMigration {
             )
             .field(
                 "start_time",
-                .date,
+                .datetime,
                 .required
             )
             .field(
                 "end_time",
-                .date,
+                .datetime,
                 .required
             )
             .field(
@@ -45,7 +45,7 @@ struct CreateWorkshop: AsyncMigration {
                 "category_id",
                 .uuid,
                 .required,
-                .references(Category.schema, "id")
+                .references(CategoryModel.schema, "id")
             )
             .create()
     }

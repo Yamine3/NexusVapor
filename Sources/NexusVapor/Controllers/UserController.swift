@@ -8,7 +8,6 @@ import Vapor
 import Fluent
 import JWT
 import FluentSQL
-import Gatekeeper
 
 struct UserController: RouteCollection {
     
@@ -19,10 +18,8 @@ struct UserController: RouteCollection {
         //POST /users
         users.post(use: create) //crée un nouvel utilisateur
         
-        //POST /users/login + rate limiting
-        let loginRoutes = users.grouped(GatekeeperMiddleware())
-        
-       loginRoutes.post("login", use: login) //connexion d'un utilisateur
+        //POST /users/login (le rate limiting est global, dans configure.swift)
+        users.post("login", use: login) //connexion d'un utilisateur
         
         //Pour les utilisateurs authentifiés (festivalGoer + Staff)
         let protectedRoutes = users.grouped(JWTMiddleware())
@@ -33,13 +30,29 @@ struct UserController: RouteCollection {
     
     
     @Sendable
-    func create(req:Request) async throws -> UserDTO {
+    func create(req:Request) async throws -> AuthDTO {
         var newUser = try req.content.decode(CreateUserDTO.self)
         newUser.password = try Bcrypt.hash(newUser.password)
         let userToSave = newUser.toModel()
+        
         try await userToSave.save(on: req.db)
-        return userToSave.toDTO()
+        
+        guard let userID = userToSave.id else {
+            throw Abort(.internalServerError, reason: "Unable to retrieve user ID.")
+        }
+        
+        let payload = UserPayload(id: userID)
+        
+        let signer = JWTSigner.hs256(
+            key: Environment.get("SECRET_KEY")!
+        )
+        
+        let jwToken = try signer.sign(payload)
+        
+        return AuthDTO(token: jwToken, role: Role.festivalGoer)
     }
+    
+    
     
     @Sendable
     func login(req:Request) async throws -> AuthDTO{
@@ -53,7 +66,7 @@ struct UserController: RouteCollection {
         }
         
         guard try Bcrypt.verify(userRequest.password, created: userDB.password)
-        else {
+                else {
             throw Abort(.unauthorized, reason: "Invalid email or password.")
         }
         
@@ -63,41 +76,42 @@ struct UserController: RouteCollection {
         
         let jwToken = try signer.sign(payload)
         
-        return AuthDTO(token: jwToken)
+        return AuthDTO(token: jwToken, role: userDB.role)
     }
     
     @Sendable
     func profile(req: Request) async throws -> UserDTO {
         let payload = try req.auth.require(UserPayload.self)
         guard let userDB = try await UserModel.find(payload.id, on: req.db)
-        else {
+                else {
             throw Abort(.notFound, reason: "User does not exist.")
         }
         return userDB.toDTO()
     }
-
-    /*
-    @Sendable
-    func getUserById(req: Request) async throws -> UserDTO {
-        guard let userIdReq = req.parameters.get("userID") as UUID?
-        else {
-            throw Abort(.notFound, reason: "User does not exist.")
-        }
-        
-        if let sql = req.db as? (any SQLDatabase) {
-            let users = try await sql.raw("SELECT * FROM utilisateurs WHERE id = \(bind: userIdReq)")
-                .all(decodingFluent: UserModel.self)
-            
-            guard let foundUser = users.first
-            else {
-                throw Abort(.notFound, reason: "User not found.")
-            }
-            
-            return foundUser.toDTO()
-        }
-        
-        throw Abort(.internalServerError, reason: "The data base is not of type SQL.")
-    }
     
-*/
 }
+    /*
+     @Sendable
+     func getUserById(req: Request) async throws -> UserDTO {
+     guard let userIdReq = req.parameters.get("userID") as UUID?
+     else {
+     throw Abort(.notFound, reason: "User does not exist.")
+     }
+     
+     if let sql = req.db as? (any SQLDatabase) {
+     let users = try await sql.raw("SELECT * FROM utilisateurs WHERE id = \(bind: userIdReq)")
+     .all(decodingFluent: UserModel.self)
+     
+     guard let foundUser = users.first
+     else {
+     throw Abort(.notFound, reason: "User not found.")
+     }
+     
+     return foundUser.toDTO()
+     }
+     
+     throw Abort(.internalServerError, reason: "The data base is not of type SQL.")
+     }
+     
+     */
+

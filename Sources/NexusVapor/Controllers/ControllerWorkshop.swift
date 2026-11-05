@@ -114,7 +114,7 @@ struct ControllerWorkshop: RouteCollection {
             )
         }
         
-        guard try await Category.find(dto.categoryID, on: req.db) != nil else {
+        guard try await CategoryModel.find(dto.categoryID, on: req.db) != nil else {
             throw Abort(
                 .notFound,
                 reason: "Category not found."
@@ -170,7 +170,7 @@ struct ControllerWorkshop: RouteCollection {
             )
         }
         
-        guard try await Category.find(dto.categoryID, on: req.db) != nil else {
+        guard try await CategoryModel.find(dto.categoryID, on: req.db) != nil else {
             throw Abort(
                 .notFound,
                 reason: "Category not found."

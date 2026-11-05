@@ -18,10 +18,12 @@ let package = Package(
         // 🔵 Non-blocking, event-driven networking for Swift. Used for custom executors
         .package(url: "https://github.com/apple/swift-nio.git", from: "2.101.0"),
         
-            .package(url: "https://github.com/vapor/jwt.git", from: "4.0.0"),
+        .package(url: "https://github.com/vapor/jwt.git", from: "4.0.0"),
         
-            .package(url:"https://github.com/nodes-vapor/gatekeeper.git", from: "4.0.0")
-    ],
+        .package(url:"https://github.com/nodes-vapor/gatekeeper.git", from: "4.0.0"),
+        
+        .package(url:"https://github.com/vapor/fluent-sqlite-driver.git", from: "4.5.0"),
+        ],
     targets: [
         .executableTarget(
             name: "NexusVapor",
@@ -33,7 +35,9 @@ let package = Package(
                 .product(name: "NIOCore", package: "swift-nio"),
                 .product(name: "NIOPosix", package: "swift-nio"),
                 .product(name: "JWT", package: "jwt"),
-                .product(name: "Gatekeeper", package: "gatekeeper")
+                .product(name: "Gatekeeper", package: "gatekeeper"),
+                .product(name: "FluentSQLiteDriver", package: "fluent-sqlite-driver")
+
             ],
             swiftSettings: swiftSettings
         ),

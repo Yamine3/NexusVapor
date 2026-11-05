@@ -9,4 +9,5 @@ import Vapor
 
 struct AuthDTO : Content {
     let token: String
+    let role: Role
 }
