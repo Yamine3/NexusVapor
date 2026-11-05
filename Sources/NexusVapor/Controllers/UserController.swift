@@ -47,9 +47,9 @@ struct UserController: RouteCollection {
             key: Environment.get("SECRET_KEY")!
         )
         
-        let jwtToken = try signer.sign(payload)
+        let jwToken = try signer.sign(payload)
         
-        return AuthDTO(token: jwtToken)
+        return AuthDTO(token: jwToken, role: Role.festivalGoer)
     }
     
     
@@ -76,7 +76,7 @@ struct UserController: RouteCollection {
         
         let jwToken = try signer.sign(payload)
         
-        return AuthDTO(token: jwToken)
+        return AuthDTO(token: jwToken, role: userDB.role)
     }
     
     @Sendable
