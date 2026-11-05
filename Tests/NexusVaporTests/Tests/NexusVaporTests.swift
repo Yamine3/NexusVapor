@@ -94,6 +94,30 @@ struct NexusVaporTests {
         )
     }
     
+    @Test("/POST User creation")
+    func userCreation() async throws {
+        try await withApp { app in
+            let userDTO = CreateUserDTO(
+                name: "Alice",
+                email: "alice@test.com",
+                password: "password123"
+            )
+
+            try await app.testing().test(
+                .POST, "users",
+                beforeRequest: { req in
+                    try req.content.encode(userDTO, as: .json)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    let user = try res.content.decode(UserDTO.self)
+                    #expect(user.email == "alice@test.com")
+                    #expect(user.name == "Alice")
+                }
+            )
+        }
+    }
+    
     @Test("/GET Index Categories")
     func indexCategories() async throws {
         try await withApp { app in
@@ -544,7 +568,7 @@ struct NexusVaporTests {
         }
     }
 
-    @Test("/GET Workshop show")
+    @Test("/GET Workshop detail")
     func workshopShow() async throws {
         try await withApp { app in
             let token = try await tokenFestivalGoer(app)
@@ -573,6 +597,71 @@ struct NexusVaporTests {
                     let detail = try res.content.decode(GetWorkshopsDetailResponseDTO.self)
                     #expect(detail.name == "Atelier dessin")
                     #expect(detail.category == "Mangas")
+                }
+            )
+        }
+    }
+    
+    @Test("/GET Workshop attendees")
+    func workshopAttendees() async throws {
+        try await withApp { app in
+            let userToken = try await tokenFestivalGoer(app)
+            let staffToken = try await tokenStaff(app)
+
+            let category = CategoryModel(name : "Mangas")
+            try await category.save(on: app.db)
+
+            let workshop = Workshop(
+                name: "Atelier dessin",
+                startTime: Date(),
+                endTime: Date().addingTimeInterval(3600),
+                capacityMax: 10,
+                totalSubscribers: 0,
+                description: "Apprendre à dessiner un personnage",
+                categoryID: category.id!
+            )
+            try await workshop.save(on: app.db)
+
+            try await reserveTest(app, token: userToken, workshop: workshop)
+
+            try await app.testing().test(
+                .GET, "reservations/workshops/\(workshop.id!)/attendees",
+                beforeRequest: { req in
+                    req.headers.bearerAuthorization = BearerAuthorization(token: staffToken)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                }
+            )
+        }
+    }
+
+    @Test("/GET Workshop attendees forbidden")
+    func workshopAttendeesForbidden() async throws {
+        try await withApp { app in
+            let token = try await tokenFestivalGoer(app)
+
+            let category = CategoryModel(name : "Mangas")
+            try await category.save(on: app.db)
+
+            let workshop = Workshop(
+                name: "Atelier dessin",
+                startTime: Date(),
+                endTime: Date().addingTimeInterval(3600),
+                capacityMax: 10,
+                totalSubscribers: 0,
+                description: "Apprendre à dessiner un personnage",
+                categoryID: category.id!
+            )
+            try await workshop.save(on: app.db)
+
+            try await app.testing().test(
+                .GET, "reservations/workshops/\(workshop.id!)/attendees",
+                beforeRequest: { req in
+                    req.headers.bearerAuthorization = BearerAuthorization(token: token)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .forbidden)
                 }
             )
         }
@@ -797,6 +886,62 @@ struct NexusVaporTests {
                 },
                 afterResponse: { res async throws in
                     #expect(res.status == .ok)
+                }
+            )
+        }
+    }
+    
+    
+    @Test("/GET Reservations index forbidden")
+    func reservationsIndexForbidden() async throws {
+        try await withApp { app in
+            let token = try await tokenFestivalGoer(app)
+
+            try await app.testing().test(
+                .GET, "reservations",
+                beforeRequest: { req in
+                    req.headers.bearerAuthorization = BearerAuthorization(token: token)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .forbidden)
+                }
+            )
+        }
+    }
+
+    @Test("/GET Reservations/me ")
+    func reservationsMe() async throws {
+        try await withApp { app in
+            let myToken = try await tokenFestivalGoer(app, email: "emma@nexusfestival.com")
+            let otherToken = try await tokenFestivalGoer(app, email: "bob@nexusfestival.com")
+
+            let category = CategoryModel(name : "Mangas")
+            try await category.save(on: app.db)
+
+            let workshop = Workshop(
+                name: "Atelier dessin",
+                startTime: Date(),
+                endTime: Date().addingTimeInterval(3600),
+                capacityMax: 10,
+                totalSubscribers: 0,
+                description: "Apprendre à dessiner un personnage",
+                categoryID: category.id!
+            )
+            try await workshop.save(on: app.db)
+
+            try await reserveTest(app, token: myToken, workshop: workshop)
+            try await reserveTest(app, token: otherToken, workshop: workshop)
+
+            try await app.testing().test(
+                .GET, "reservations/me",
+                beforeRequest: { req in
+                    req.headers.bearerAuthorization = BearerAuthorization(token: myToken)
+                },
+                afterResponse: { res async throws in
+                    #expect(res.status == .ok)
+                    let reservations = try res.content.decode([GetReservationListItemResponseDTO].self)
+                    #expect(reservations.count == 1)
+                    #expect(reservations.first?.status == .validated)
                 }
             )
         }
