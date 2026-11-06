@@ -38,7 +38,7 @@ struct ControllerWorkshop: RouteCollection {
             workshop.delete(use: delete)
         }
         
- 
+        
     }
     
     //INDEX
@@ -72,7 +72,7 @@ struct ControllerWorkshop: RouteCollection {
             .with(\.$category)
             .filter(\.$id == id)
             .first()
-                else {
+        else {
             throw Abort(.notFound, reason: "Workshop not found.")
         }
         
@@ -209,8 +209,13 @@ struct ControllerWorkshop: RouteCollection {
                 reason: "Workshop not found."
             )
         }
-        
-        try await workshop.delete(on: req.db)
+
+        try await req.db.transaction { db in
+            try await Reservation.query(on: db)
+                .filter(\.$workshop.$id == id)
+                .delete()
+            try await workshop.delete(on: db)
+        }
         
         return .noContent
     }
